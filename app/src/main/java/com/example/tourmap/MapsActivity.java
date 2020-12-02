@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AppComponentFactory;
 import android.content.Context;
 import android.content.Intent;
@@ -52,8 +53,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     double mylatlon[] = new double[2]; // 내 위치의 위도 경도
     ArrayAdapter<String> adapter;
     int pos; //position을 담을 값
-    LocationManager myLocation; // 위치를 가져온다
-    LocationListener myListener; // 상태값을 가져온다
     boolean myCheck = false; // 내 위치가 관광지와 경로가 겹치지 않게 하기 위함
 
 
@@ -77,6 +76,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 latlon[1] = lon[position];
                 pos = position;
                 myCheck = false;
+                setMylatlon();
                 moveMap(latlon);
 //                mMap.addMarker(new MarkerOptions().position(TourPos).title(seoulTour[position])); // 표시되는 곳
             }
@@ -93,12 +93,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         AutoPermissions.Companion.parsePermissions(this, requestCode, permissions, this);
     }
 
+    @SuppressLint("MissingPermission")
     void setMylatlon() {
         LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         // 내 위치를 찾겠다고 경로를 얻어온다.
         try {
             Location location = manager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-            //마지막 내 위치 정보를 가져와둔다.
+            //마지막 내 위치 정보를 가져와둔다. // PASSIVE_PROVIDER는 GPS로 찾고 안 되면 네트워크로 찾는다.(찾기위한 최적의 방법)
             if (location != null) {
                 mylatlon[0] = location.getLatitude();//위도 가져온다
                 mylatlon[1] = location.getLongitude();//경도 가져온다
@@ -109,19 +110,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             showToast("위치를 찾을 수 없습니다.");
         }
         GPSListener gpsListener = new GPSListener();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
-                PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
-                        PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
+
         manager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER,
                 10000, 1, gpsListener);
 
@@ -156,7 +145,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) { // 실행하자마자 바로 뜬다. OnMapReadyCallback의 오버라이딩
         mMap = googleMap;
     }
-    public void moveMap(double locationLatLon[]) {
+
+    public void moveMap(double locationLatLon[]) { //실제 위치로 지도를 이동하는 메소드
         String[] address = {"서울특별시 용산구 서빙고로 137 국립중앙박물관",
         "서울특별시 중구 퇴계로34길 28 남산한옥마을",
         "서울특별시 서초구 남부순환로 2364 국립국악원",
@@ -249,13 +239,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         showToast("사용 가능");
         setMylatlon();
     }
-
+    //내 위치정보에 관련된 클래스
     public class GPSListener implements LocationListener {// 상태값을 체크하는 것
 
         @Override
         public void onLocationChanged(@NonNull Location location) {//location이 내 위치정보를 가져온다.
-            mylatlon[0] = location.getLatitude();
-            mylatlon[1] = location.getLongitude();
+            mylatlon[0] = location.getLatitude(); // 내 위도
+            mylatlon[1] = location.getLongitude(); // 내 경도
         }
 
         @Override
